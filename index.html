@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+    />
+    <title>Sniper Standoff</title>
+    <link rel="icon" href="data:," />
+    <!-- CrazyGames SDK v3; the game runs without it when blocked or self-hosted -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <script type="module" crossorigin src="./assets/index-TBP9X7SG.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DM2Tnfg8.css">
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="ui">
+      <div id="duel">
+        <div id="flash"></div>
+        <div id="scope">
+          <i class="h"></i><i class="v"></i>
+          <div class="ring"></div>
+          <div class="mils"></div>
+          <b id="scopeAmmo"></b>
+        </div>
+        <div id="top">
+          <div class="side you">
+            <div class="who">
+              <div class="avatar"></div>
+              <div><b id="nameYou">YOU</b><span class="pw" id="powerYou"></span></div>
+            </div>
+            <div class="hp"><i id="hpYouBar"></i><span id="hpYou">100</span></div>
+            <div class="ammo" id="ammoYou"></div>
+          </div>
+          <div class="side foe">
+            <div class="who">
+              <div><b id="nameFoe">ENEMY</b><span class="pw" id="powerFoe"></span></div>
+              <div class="avatar"></div>
+            </div>
+            <div class="hp"><i id="hpFoeBar"></i><span id="hpFoe">100</span></div>
+            <div class="ammo" id="ammoFoe"></div>
+          </div>
+        </div>
+        <div id="cash"></div>
+        <div id="banner"></div>
+        <div id="pop"></div>
+        <div id="hit"></div>
+        <div id="floats"></div>
+        <div id="hint"></div>
+        <div id="gesture"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M26 58c-6 0-9-3-13-10l-7-13c-1-2 0-4 2-5s4 0 5 2l6 8V12a4 4 0 018 0v20h2V22a4 4 0 018 0v10h2v-7a4 4 0 018 0v7h2v-4a4 4 0 018 0v18c0 8-6 12-14 12z" fill="#fff" stroke="#14233a" stroke-width="3" stroke-linejoin="round"/></svg><i></i></div>
+        <div id="stick"><i></i></div>
+        <button id="pauseBtn" aria-label="Pause"><i></i><i></i></button>
+        <div id="score"></div>
+        <button id="emoteBtn" aria-label="Quick chat">💬</button>
+        <div id="emoteMenu"></div>
+        <div id="bubbleYou" class="bubble"></div>
+        <div id="bubbleFoe" class="bubble"></div>
+      </div>
+      <div id="meta"></div>
+      <div id="modal"></div>
+      <div id="toasts"></div>
+      <div id="boot"><b>Sniper Standoff</b><span></span></div>
+    </div>
+  </body>
+</html>
