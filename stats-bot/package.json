@@ -1,0 +1,16 @@
+{
+  "name": "crazygames-stats-bot",
+  "private": true,
+  "type": "module",
+  "description": "Ранковий бот: стежить за оновленням статистики CrazyGames, шле сповіщення в Telegram і будує таблицю метрик по днях",
+  "scripts": {
+    "login": "node src/login.mjs",
+    "check": "node src/main.mjs",
+    "discover": "node src/main.mjs --discover --force --no-notify",
+    "demo": "node src/demo.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.48.2"
+  }
+}

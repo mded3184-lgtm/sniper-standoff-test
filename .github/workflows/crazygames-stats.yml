@@ -1,0 +1,87 @@
+name: CrazyGames stats bot
+
+on:
+  schedule:
+    # кожні 30 хв з 04:00 до 11:30 UTC (≈ 6:00–14:30 за Києвом);
+    # після того як статистика за вчора знайдена, решта запусків закінчуються за кілька секунд
+    - cron: '*/30 4-11 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Перевірити й надіслати повторно, навіть якщо вже сповіщали'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crazygames-stats
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: stats-bot
+    env:
+      DATA_BRANCH: stats-data
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      CG_STORAGE_STATE: ${{ secrets.CG_STORAGE_STATE }}
+      CG_STATS_URL: ${{ vars.CG_STATS_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # історія метрик живе в окремій гілці, щоб деплой гри її не затирав
+      - name: Checkout data branch
+        run: |
+          git config user.name "crazygames-stats-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth=1 origin "$DATA_BRANCH"; then
+            git worktree add data "origin/$DATA_BRANCH"
+          else
+            git worktree add --detach data
+            git -C data checkout --orphan "$DATA_BRANCH"
+            git -C data rm -rf --quiet .
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Precheck
+        id: pre
+        run: node src/main.mjs --precheck ${{ inputs.force && '--force' || '' }}
+
+      - name: Install
+        if: steps.pre.outputs.skip != 'true'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Check stats
+        if: steps.pre.outputs.skip != 'true'
+        run: node src/main.mjs ${{ inputs.force && '--force' || '' }}
+
+      - name: Save history
+        if: always() && steps.pre.outputs.skip != 'true'
+        working-directory: stats-bot/data
+        run: |
+          git add -A
+          if git diff --cached --quiet; then echo "Без змін"; exit 0; fi
+          git commit -m "stats: $(date -u +%F)"
+          git push origin "HEAD:$DATA_BRANCH"
+
+      - name: Upload table and debug dump
+        if: always() && steps.pre.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stats-${{ github.run_id }}
+          path: |
+            stats-bot/data/stats.html
+            stats-bot/out/
+          if-no-files-found: ignore
+          retention-days: 7

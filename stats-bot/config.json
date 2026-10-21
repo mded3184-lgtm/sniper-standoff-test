@@ -1,0 +1,10 @@
+{
+  "statsUrl": "https://developer.crazygames.com/",
+  "timezone": "Europe/Kyiv",
+  "giveUpHour": 13,
+  "neutralThresholdPct": 1,
+  "tableDays": 30,
+  "metrics": {},
+  "exclude": ["id", "gameId", "version"],
+  "lowerIsBetter": ["bounceRate", "bounce_rate", "errors", "errorRate", "crashes", "loadTime", "load_time"]
+}
