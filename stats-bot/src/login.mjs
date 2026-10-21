@@ -4,7 +4,7 @@
 // і друкує base64-рядок для секрету CG_STORAGE_STATE.
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -14,7 +14,6 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(await readFile(path.join(ROOT, 'config.json'), 'utf8'));
 const url = process.env.CG_STATS_URL || config.statsUrl;
-const PORT = 9333;
 
 function findBrowser() {
   const local = process.env.LOCALAPPDATA ?? '';
@@ -32,15 +31,27 @@ function findBrowser() {
   return candidates.find((p) => p && existsSync(p));
 }
 
+// Порт налагодження читаємо з DevToolsActivePort у профілі бота — так підключаємось
+// саме до нашого вікна, а не до іншого Chrome, який теж може слухати якийсь порт.
+const profile = path.join(os.homedir(), '.crazygames-stats-bot-profile');
+const portFile = path.join(profile, 'DevToolsActivePort');
+
+async function cdpPort() {
+  try {
+    const port = readFileSync(portFile, 'utf8').split('\n')[0].trim();
+    const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+    if (res.ok) return port;
+  } catch {}
+  return null;
+}
+
 async function waitForCdp() {
-  for (let i = 0; i < 50; i++) {
-    try {
-      const res = await fetch(`http://127.0.0.1:${PORT}/json/version`);
-      if (res.ok) return;
-    } catch {}
+  for (let i = 0; i < 75; i++) {
+    const port = await cdpPort();
+    if (port) return port;
     await new Promise((r) => setTimeout(r, 200));
   }
-  throw new Error('Браузер не відкрив порт налагодження — закрийте всі його вікна й спробуйте ще раз');
+  throw new Error('Не вдалось підключитись до вікна браузера бота — закрийте всі його вікна й спробуйте ще раз');
 }
 
 const exe = findBrowser();
@@ -50,8 +61,8 @@ if (!exe) {
 }
 
 // окремий профіль: не чіпає ваш основний браузер і запам'ятовує вхід для наступних разів
-const profile = path.join(os.homedir(), '.crazygames-stats-bot-profile');
-const child = spawn(exe, [`--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', url], {
+if (!(await cdpPort())) rmSync(portFile, { force: true }); // залишок від минулого запуску
+const child = spawn(exe, ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', url], {
   stdio: 'ignore',
   detached: true,
 });
@@ -61,8 +72,7 @@ console.log(`Відкрито ${path.basename(exe)}.`);
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 await rl.question('Увійдіть у кабінет розробника CrazyGames, відкрийте сторінку статистики гри й натисніть тут Enter… ');
 
-await waitForCdp();
-const browser = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`);
+const browser = await chromium.connectOverCDP(`http://127.0.0.1:${await waitForCdp()}`, { timeout: 90_000 });
 const context = browser.contexts()[0];
 // вкладки кабінету, крім сторінки входу; найглибша адреса — найімовірніше статистика гри
 const tabs = context
