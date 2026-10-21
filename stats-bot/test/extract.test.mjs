@@ -51,3 +51,23 @@ test('dates', () => {
   assert.equal(prevDay('2026-03-01'), '2026-02-28');
   assert.deepEqual(localParts('Europe/Kyiv', new Date('2026-10-20T22:30:00Z')), { date: '2026-10-21', hour: 1 });
 });
+
+test('[date, value] pairs and columnar formats', () => {
+  const ts = Date.UTC(2026, 9, 20);
+  assert.deepEqual(extractDaily([{ url: 'x', body: { plays: [[ts, 5], [ts + 864e5, 6]] } }]), {
+    '2026-10-20': { plays: 5 }, '2026-10-21': { plays: 6 },
+  });
+  assert.deepEqual(extractDaily([{ url: 'x', body: { labels: ['2026-10-19', '2026-10-20'], datasets: [{ label: 'Gameplays', data: [1, 2] }] } }]), {
+    '2026-10-19': { Gameplays: 1 }, '2026-10-20': { Gameplays: 2 },
+  });
+  assert.deepEqual(extractDaily([{ url: 'x', body: { dates: ['2026-10-19', '2026-10-20'], plays: [3, 4], users: [1, 2] } }]), {
+    '2026-10-19': { plays: 3, users: 1 }, '2026-10-20': { plays: 4, users: 2 },
+  });
+});
+
+test('shapeOf hides values', async () => {
+  const { shapeOf } = await import('../src/extract.mjs');
+  assert.deepEqual(shapeOf({ email: 'a@b.c', rows: [{ date: '2026-10-20', n: 5 }] }), {
+    email: 'string', rows: ['1 ×', { date: 'date-string', n: 'number' }],
+  });
+});

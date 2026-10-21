@@ -60,6 +60,11 @@ function walk(node, path, out, exclude, depth) {
   if (depth > 12 || node == null || typeof node !== 'object') return;
 
   if (Array.isArray(node)) {
+    // пари [дата, значення] — формат Highcharts/ECharts
+    if (node.length && node.every((x) => Array.isArray(x) && x.length >= 2 && toDay(x[0]) && toNumber(x[1]) != null)) {
+      for (const [d, v] of node) addRow(out, toDay(d), nameFromPath(path), toNumber(v));
+      return;
+    }
     const first = node.find((x) => x && typeof x === 'object' && !Array.isArray(x));
     const dateKey = first && DATE_KEYS.find((k) => k in first && toDay(first[k]));
     if (dateKey) {
@@ -70,8 +75,31 @@ function walk(node, path, out, exclude, depth) {
     return;
   }
 
-  // об'єкт, ключі якого — дати
   const keys = Object.keys(node);
+
+  // колонковий формат: { labels|dates|days: [...дати], datasets: [{label, data}] } або { dates: [...], plays: [...] }
+  const axisKey = keys.find((k) => Array.isArray(node[k]) && node[k].length && node[k].every((d) => toDay(d)));
+  if (axisKey) {
+    const days = node[axisKey].map(toDay);
+    let found = false;
+    const series = (name, arr) => {
+      if (!Array.isArray(arr) || arr.length !== days.length) return;
+      arr.forEach((v, i) => {
+        const num = toNumber(v);
+        if (num != null) addRow(out, days[i], name, num), (found = true);
+      });
+    };
+    for (const k of keys) {
+      if (k === axisKey || exclude.has(k)) continue;
+      const v = node[k];
+      if (Array.isArray(v) && v.length && v.every((s) => s && typeof s === 'object' && Array.isArray(s.data))) {
+        v.forEach((s, i) => series(String(s.label ?? s.name ?? s.key ?? s.id ?? `${k}${i}`), s.data));
+      } else series(k, v);
+    }
+    if (found) return;
+  }
+
+  // об'єкт, ключі якого — дати
   const dateKeys = keys.filter((k) => /^\d{4}-\d{2}-\d{2}/.test(k));
   if (dateKeys.length >= 2 && dateKeys.length >= keys.length / 2) {
     for (const k of dateKeys) {
@@ -95,6 +123,21 @@ export function extractDaily(responses, { exclude = [] } = {}) {
   const out = {};
   for (const r of responses) walk(r.body, [], out, ex, 0);
   return out;
+}
+
+/**
+ * Скелет JSON без значень (лише ключі, типи, довжини масивів) — щоб показати
+ * структуру даних дашборду, не розкриваючи самих цифр і особистих даних.
+ */
+export function shapeOf(node, depth = 0) {
+  if (depth > 8) return '…';
+  if (Array.isArray(node)) return node.length ? [`${node.length} ×`, shapeOf(node[0], depth + 1)] : [];
+  if (node && typeof node === 'object') {
+    return Object.fromEntries(Object.entries(node).slice(0, 40).map(([k, v]) => [k, shapeOf(v, depth + 1)]));
+  }
+  if (typeof node === 'string') return toDay(node) ? 'date-string' : 'string';
+  if (typeof node === 'number') return toDay(node) ? 'number(timestamp?)' : 'number';
+  return node === null ? 'null' : typeof node;
 }
 
 /** Залишає лише потрібні метрики (якщо whitelist у config.metrics не порожній). */

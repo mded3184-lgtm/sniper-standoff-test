@@ -8,7 +8,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { extractDaily, filterMetrics } from './extract.mjs';
+import { extractDaily, filterMetrics, shapeOf } from './extract.mjs';
 import { renderHtml, renderSummary } from './table.mjs';
 import * as tg from './telegram.mjs';
 
@@ -91,8 +91,14 @@ async function main() {
   if (DISCOVER || !found || loggedOut) {
     await writeJson(path.join(OUT_DIR, 'responses.json'), responses);
     await writeJson(path.join(OUT_DIR, 'extracted.json'), daily);
+    // структура без значень — її безпечно надсилати для налаштування парсера
+    const shape = responses.map((r) => ({ url: r.url.split('?')[0], shape: shapeOf(r.body) }));
+    await writeJson(path.join(OUT_DIR, 'shape.json'), shape);
     if (screenshot) await writeFile(path.join(OUT_DIR, 'page.png'), screenshot);
-    console.log(`Сирі дані збережено в ${OUT_DIR}`);
+    console.log(`\nСторінка: ${finalUrl}${loggedOut ? '  ⚠️ схоже на сторінку входу' : ''}`);
+    console.log(`JSON-відповідей: ${responses.length}, днів з метриками: ${found}`);
+    for (const r of shape) console.log(`  ${r.url}`);
+    console.log(`\nСирі дані збережено в ${OUT_DIR}`);
   }
 
   if (loggedOut || !found) {
