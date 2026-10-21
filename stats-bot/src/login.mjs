@@ -60,15 +60,28 @@ console.log(`Відкрито ${path.basename(exe)}.`);
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 await rl.question('Увійдіть у кабінет розробника CrazyGames, відкрийте сторінку статистики гри й натисніть тут Enter… ');
-rl.close();
 
 await waitForCdp();
 const browser = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`);
 const context = browser.contexts()[0];
-const pages = context.pages();
-const statsPage = pages.find((p) => p.url().includes('crazygames')) ?? pages[0];
+// вкладки кабінету, крім сторінки входу; найглибша адреса — найімовірніше статистика гри
+const tabs = context
+  .pages()
+  .map((p) => p.url())
+  .filter((u) => u.includes('crazygames') && !/\/login|signin/i.test(u));
+tabs.sort((a, b) => b.length - a.length);
 
-console.log(`\nURL сторінки статистики: ${statsPage?.url()}`);
+let statsUrl = tabs[0] ?? '';
+if (tabs.length > 1) {
+  console.log('\nВідкриті вкладки CrazyGames:');
+  tabs.forEach((u, i) => console.log(`  ${i + 1}) ${u}`));
+  const answer = (await rl.question('Номер вкладки зі статистикою гри (Enter = 1) або вставте URL: ')).trim();
+  if (/^https?:\/\//.test(answer)) statsUrl = answer;
+  else if (tabs[Number(answer) - 1]) statsUrl = tabs[Number(answer) - 1];
+}
+rl.close();
+
+console.log(`\nURL сторінки статистики: ${statsUrl || '(не знайдено — скопіюйте з адресного рядка браузера)'}`);
 console.log('Його потрібно вписати в змінну CG_STATS_URL (або в config.json → statsUrl).\n');
 
 // indexedDB: Firebase-подібні входи тримають токен там, а не в cookies
