@@ -71,15 +71,18 @@ const statsPage = pages.find((p) => p.url().includes('crazygames')) ?? pages[0];
 console.log(`\nURL сторінки статистики: ${statsPage?.url()}`);
 console.log('Його потрібно вписати в змінну CG_STATS_URL (або в config.json → statsUrl).\n');
 
-const state = await context.storageState();
+// indexedDB: Firebase-подібні входи тримають токен там, а не в cookies
+const state = await context.storageState({ indexedDB: true });
 await writeFile(path.join(ROOT, 'auth.json'), JSON.stringify(state));
 const cgCookies = state.cookies.filter((c) => c.domain.includes('crazygames')).length;
+const cgOrigins = state.origins.filter((o) => o.origin.includes('crazygames'));
+console.log(`CrazyGames: cookies ${cgCookies}, localStorage ${cgOrigins.reduce((n, o) => n + o.localStorage.length, 0)}, IndexedDB ${cgOrigins.reduce((n, o) => n + (o.indexedDB?.length ?? 0), 0)}`);
 await browser.close().catch(() => {});
 
-if (!cgCookies) {
-  console.log('⚠️  Не знайдено cookies CrazyGames — схоже, вхід не завершено. Спробуйте ще раз.');
+if (!cgCookies && !cgOrigins.length) {
+  console.log('⚠️  Не знайдено даних входу CrazyGames — схоже, вхід не завершено. Спробуйте ще раз.');
   process.exit(1);
 }
-console.log(`Сесію збережено в stats-bot/auth.json (cookies CrazyGames: ${cgCookies}). Не комітьте цей файл.`);
+console.log('Сесію збережено в stats-bot/auth.json. Не комітьте цей файл.');
 console.log('Щоб скопіювати значення секрету CG_STORAGE_STATE у буфер обміну (PowerShell):');
-console.log('  [Convert]::ToBase64String([IO.File]::ReadAllBytes("auth.json")) | Set-Clipboard');
+console.log('  [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path auth.json))) | Set-Clipboard');
