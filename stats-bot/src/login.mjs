@@ -9,6 +9,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import readline from 'node:readline/promises';
+import { dumpOrigin, countRecords } from './webstorage.mjs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -94,18 +95,39 @@ rl.close();
 console.log(`\nURL сторінки статистики: ${statsUrl || '(не знайдено — скопіюйте з адресного рядка браузера)'}`);
 console.log('Його потрібно вписати в змінну CG_STATS_URL (або в config.json → statsUrl).\n');
 
-// indexedDB: Firebase-подібні входи тримають токен там, а не в cookies
-const state = await context.storageState({ indexedDB: true });
+// cookies + localStorage/IndexedDB кожного відкритого сайту CrazyGames (там токен входу)
+const { cookies } = await context.storageState();
+const origins = [];
+const seen = new Set();
+for (const page of context.pages()) {
+  let origin;
+  try {
+    origin = new URL(page.url()).origin;
+  } catch {
+    continue;
+  }
+  if (!origin.includes('crazygames') || seen.has(origin)) continue;
+  seen.add(origin);
+  try {
+    origins.push(await page.evaluate(dumpOrigin));
+  } catch (e) {
+    console.log(`Не вдалось прочитати сховище ${origin}: ${e.message}`);
+  }
+}
+const state = { cookies, origins: [], webStorage: origins };
 await writeFile(path.join(ROOT, 'auth.json'), JSON.stringify(state));
-const cgCookies = state.cookies.filter((c) => c.domain.includes('crazygames')).length;
-const cgOrigins = state.origins.filter((o) => o.origin.includes('crazygames'));
-console.log(`CrazyGames: cookies ${cgCookies}, localStorage ${cgOrigins.reduce((n, o) => n + o.localStorage.length, 0)}, IndexedDB ${cgOrigins.reduce((n, o) => n + (o.indexedDB?.length ?? 0), 0)}`);
 await browser.close().catch(() => {});
 
-if (!cgCookies && !cgOrigins.length) {
-  console.log('⚠️  Не знайдено даних входу CrazyGames — схоже, вхід не завершено. Спробуйте ще раз.');
+const cgCookies = cookies.filter((c) => c.domain.includes('crazygames')).length;
+const ls = origins.reduce((n, o) => n + o.localStorage.length, 0);
+const idb = origins.reduce((n, o) => n + countRecords(o), 0);
+console.log(`CrazyGames: cookies ${cgCookies}, localStorage ${ls}, IndexedDB ${idb}`);
+
+if (!origins.length) {
+  console.log('⚠️  Не знайдено відкритої вкладки CrazyGames — увійдіть і не закривайте вкладку з кабінетом. Спробуйте ще раз.');
   process.exit(1);
 }
+if (!ls && !idb) console.log('⚠️  Сховище сайту порожнє — схоже, вхід не завершено. Якщо бот потрапить на /login, повторіть вхід.');
 console.log('Сесію збережено в stats-bot/auth.json. Не комітьте цей файл.');
 console.log('Щоб скопіювати значення секрету CG_STORAGE_STATE у буфер обміну (PowerShell):');
 console.log('  [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path auth.json))) | Set-Clipboard');

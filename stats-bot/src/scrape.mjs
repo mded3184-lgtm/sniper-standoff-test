@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { restoreOrigin } from './webstorage.mjs';
 
 const LOGIN_RE = /login|signin|sign-in|auth/i;
 
@@ -48,8 +49,16 @@ export async function captureResponses({ statsUrl, storageState, headless = true
     executablePath: process.env.CHROMIUM_PATH || undefined,
   });
   try {
-    const context = await browser.newContext({ storageState, locale: 'en-US', timezoneId: 'UTC' });
+    const { cookies = [], origins = [], webStorage = [] } = storageState;
+    const context = await browser.newContext({ storageState: { cookies, origins }, locale: 'en-US', timezoneId: 'UTC' });
     const page = await context.newPage();
+
+    // відновлюємо localStorage/IndexedDB до відкриття кабінету, щоб сайт побачив вхід
+    for (const dump of webStorage) {
+      await page.goto(`${dump.origin}/robots.txt`, { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {});
+      await page.evaluate(restoreOrigin, dump);
+    }
+
     const responses = [];
 
     page.on('response', async (res) => {

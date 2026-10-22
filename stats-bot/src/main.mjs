@@ -5,7 +5,7 @@
 //   --no-notify                    — нічого не слати в Telegram
 //   --precheck                     — лише сказати (GITHUB_OUTPUT skip=…), чи треба перевіряти
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractDaily, filterMetrics, shapeOf } from './extract.mjs';
@@ -42,7 +42,7 @@ function loadStorageState() {
   const raw = process.env.CG_STORAGE_STATE?.trim();
   if (raw) return JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'));
   const file = path.join(ROOT, 'auth.json');
-  if (existsSync(file)) return file;
+  if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8'));
   throw new Error('Немає сесії: запустіть `npm run login` і додайте секрет CG_STORAGE_STATE');
 }
 
