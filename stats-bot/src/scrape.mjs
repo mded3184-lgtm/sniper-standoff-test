@@ -62,10 +62,11 @@ export async function captureResponses({ statsUrl, storageState, headless = true
       }
     });
 
-    await page.goto(statsUrl, { waitUntil: 'networkidle', timeout: 90_000 });
-    // графіки часто довантажуються після першого рендеру
-    await page.waitForTimeout(5_000);
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.goto(statsUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    // графіки довантажуються після першого рендеру; дашборд може ніколи не «затихнути»,
+    // тому чекаємо тиші в мережі не довше 30 с і ще трохи на рендер
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+    await page.waitForTimeout(8_000);
 
     // дані, вбудовані прямо в HTML (Next.js) і звичайні HTML-таблиці з датами
     for (const frame of page.frames()) {
