@@ -66,15 +66,17 @@ async function main() {
   const { date: today, hour } = localParts(tz);
   const target = prevDay(today);
 
-  const done = !FORCE && state.lastNotified === target;
+  // GitHub запускає за UTC, а Київ то +2, то +3 — тому розклад ширший, а година перевіряється тут
+  const tooEarly = !FORCE && hour < (config.notBeforeHour ?? 0);
+  const done = tooEarly || (!FORCE && state.lastNotified === target);
   if (args.has('--precheck')) {
     // дешевий крок у CI: не ставимо браузер, якщо за вчора вже все надіслано
     if (process.env.GITHUB_OUTPUT) await writeFile(process.env.GITHUB_OUTPUT, `skip=${done}\n`, { flag: 'a' });
-    console.log(done ? `За ${target} вже сповіщено.` : `Перевіряю дані за ${target}.`);
+    console.log(tooEarly ? `Ще рано (${hour}:00), чекаю до ${config.notBeforeHour}:00.` : done ? `За ${target} вже сповіщено.` : `Перевіряю дані за ${target}.`);
     return;
   }
   if (done) {
-    console.log(`За ${target} вже сповіщено — пропускаю.`);
+    console.log(tooEarly ? `Ще рано (${hour}:00).` : `За ${target} вже сповіщено — пропускаю.`);
     return;
   }
 

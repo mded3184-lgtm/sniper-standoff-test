@@ -1,6 +1,7 @@
 {
   "statsUrl": "https://developer.crazygames.com/games/4ebf258f-72a6-491f-92b4-a49ff678e74d?tab=metrics&subtab=performance",
   "timezone": "Europe/Kyiv",
+  "notBeforeHour": 9,
   "giveUpHour": 13,
   "neutralThresholdPct": 1,
   "tableDays": 30,
