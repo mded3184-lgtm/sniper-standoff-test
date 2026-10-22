@@ -19,10 +19,32 @@ export function trend(cur, prev, name, config) {
   return { kind: up !== lowerIsBetter(name, config) ? 'good' : 'bad', pct };
 }
 
-export function fmt(v) {
+export function fmt(v, kind) {
   if (v == null) return '—';
+  if (kind === 'percent') return `${(v * 100).toLocaleString('uk-UA', { maximumFractionDigits: 1 })}%`;
+  if (kind === 'duration') {
+    const sec = Math.round(v);
+    return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  }
   if (Number.isInteger(v)) return v.toLocaleString('uk-UA');
   return v.toLocaleString('uk-UA', { maximumFractionDigits: 2 });
+}
+
+const fmtMetric = (v, name, config) => fmt(v, config.metrics?.[name]?.format);
+
+/**
+ * Значення метрики за день. Retention D1/D7 CrazyGames дораховує із запізненням:
+ * нуль за останні `pendingDays` днів означає «ще рахується», а не реальний нуль.
+ */
+export function valueOf(history, day, name, config) {
+  const v = history[day]?.[name];
+  const pending = config.metrics?.[name]?.pendingDays;
+  if (v === 0 && pending) {
+    const latest = Object.keys(history).sort().at(-1);
+    const age = (Date.parse(latest) - Date.parse(day)) / 864e5;
+    if (age < pending) return null;
+  }
+  return v;
 }
 
 const fmtPct = (p) => `${p > 0 ? '+' : ''}${p.toFixed(1)}%`;
@@ -46,14 +68,14 @@ export function renderHtml(history, config, { generatedAt = new Date() } = {}) {
   const head = metrics.map((m) => `<th>${esc(metricLabel(m, config))}</th>`).join('');
   const rows = days
     .map((d) => {
-      const prev = history[prevOf(d)] ?? {};
       const cells = metrics
         .map((m) => {
-          const cur = history[d][m];
-          const t = trend(cur, prev[m], m, config);
+          const cur = valueOf(history, d, m, config);
+          const t = trend(cur, valueOf(history, prevOf(d), m, config), m, config);
           const cls = t ? t.kind : '';
           const delta = t ? `<small>${fmtPct(t.pct)}</small>` : '';
-          return `<td class="${cls}">${fmt(cur)}${delta}</td>`;
+          const shown = cur === null ? '<small>рахується</small>' : fmtMetric(cur, m, config);
+          return `<td class="${cls}">${shown}${delta}</td>`;
         })
         .join('');
       return `<tr><th scope="row">${d}</th>${cells}</tr>`;
@@ -103,15 +125,16 @@ ${rows}
 /** Текст повідомлення в Telegram (parse_mode=HTML). */
 export function renderSummary(history, day, config) {
   const allDays = Object.keys(history).sort();
-  const prev = history[allDays[allDays.indexOf(day) - 1]] ?? {};
+  const prevDay = allDays[allDays.indexOf(day) - 1];
   const row = history[day] ?? {};
   const lines = metricNames(history, config)
-    .filter((m) => m in row)
+    .filter((m) => m in row && valueOf(history, day, m, config) !== null)
     .map((m) => {
-      const t = trend(row[m], prev[m], m, config);
+      const cur = valueOf(history, day, m, config);
+      const t = trend(cur, valueOf(history, prevDay, m, config), m, config);
       const icon = !t ? '⚪' : t.kind === 'good' ? '🟢' : t.kind === 'bad' ? '🔴' : '⚪';
       const delta = t ? ` (${fmtPct(t.pct)})` : '';
-      return `${icon} ${esc(metricLabel(m, config))}: <b>${fmt(row[m])}</b>${delta}`;
+      return `${icon} ${esc(metricLabel(m, config))}: <b>${fmtMetric(cur, m, config)}</b>${delta}`;
     });
   return [`📊 <b>Статистика CrazyGames оновилась</b> — ${day}`, '', ...lines].join('\n');
 }

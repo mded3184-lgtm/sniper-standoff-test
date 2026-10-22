@@ -71,3 +71,16 @@ test('shapeOf hides values', async () => {
     email: 'string', rows: ['1 ×', { date: 'date-string', n: 'number' }],
   });
 });
+
+test('formats and pending retention', async () => {
+  const { fmt, valueOf, renderSummary } = await import('../src/table.mjs');
+  assert.equal(fmt(0.725, 'percent'), '72,5%');
+  assert.equal(fmt(686.6, 'duration'), '11:27');
+  const cfg = { neutralThresholdPct: 1, metrics: { users: { label: 'Гравці' }, retentionD1: { format: 'percent', pendingDays: 2 } } };
+  const h = { '2026-10-19': { users: 400, retentionD1: 0.1 }, '2026-10-20': { users: 410, retentionD1: 0.12 }, '2026-10-21': { users: 415, retentionD1: 0 } };
+  assert.equal(valueOf(h, '2026-10-21', 'retentionD1', cfg), null);
+  assert.equal(valueOf(h, '2026-10-20', 'retentionD1', cfg), 0.12);
+  const text = renderSummary(h, '2026-10-21', cfg);
+  assert.match(text, /Гравці: <b>415<\/b>/);
+  assert.doesNotMatch(text, /retentionD1/);
+});

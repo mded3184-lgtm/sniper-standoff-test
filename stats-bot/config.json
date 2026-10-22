@@ -4,7 +4,78 @@
   "giveUpHour": 13,
   "neutralThresholdPct": 1,
   "tableDays": 30,
-  "metrics": {},
+  "metrics": {
+    "users": {
+      "label": "Гравці"
+    },
+    "pageviews": {
+      "label": "Перегляди сторінки"
+    },
+    "impressions": {
+      "label": "Покази"
+    },
+    "ctr": {
+      "label": "CTR",
+      "format": "percent"
+    },
+    "avgConversion": {
+      "label": "Конверсія",
+      "format": "percent"
+    },
+    "avgTimeOnPage": {
+      "label": "Час на сторінці",
+      "format": "duration"
+    },
+    "returningPlayers": {
+      "label": "Повернення гравців",
+      "format": "percent"
+    },
+    "retentionD1": {
+      "label": "Retention D1",
+      "format": "percent",
+      "pendingDays": 2
+    },
+    "retentionD7": {
+      "label": "Retention D7",
+      "format": "percent",
+      "pendingDays": 8
+    },
+    "rating": {
+      "label": "Рейтинг"
+    },
+    "likes": {
+      "label": "Лайки"
+    },
+    "dislikes": {
+      "label": "Дизлайки",
+      "lowerIsBetter": true
+    },
+    "totalVotes": {
+      "label": "Голоси"
+    },
+    "avgLoadingTime": {
+      "label": "Завантаження, с",
+      "lowerIsBetter": true
+    },
+    "loadsCrashRate": {
+      "label": "Збої завантаження",
+      "format": "percent",
+      "lowerIsBetter": true
+    },
+    "playsCrashRate": {
+      "label": "Збої в грі",
+      "format": "percent",
+      "lowerIsBetter": true
+    },
+    "crashLoadUsers": {
+      "label": "Гравці зі збоєм завантаження",
+      "lowerIsBetter": true
+    },
+    "crashPlayUsers": {
+      "label": "Гравці зі збоєм у грі",
+      "lowerIsBetter": true
+    }
+  },
   "exclude": [
     "id",
     "gameId",
