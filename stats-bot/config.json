@@ -1,10 +1,22 @@
 {
-  "statsUrl": "https://developer.crazygames.com/",
+  "statsUrl": "https://developer.crazygames.com/games/4ebf258f-72a6-491f-92b4-a49ff678e74d?tab=metrics&subtab=performance",
   "timezone": "Europe/Kyiv",
   "giveUpHour": 13,
   "neutralThresholdPct": 1,
   "tableDays": 30,
   "metrics": {},
-  "exclude": ["id", "gameId", "version"],
-  "lowerIsBetter": ["bounceRate", "bounce_rate", "errors", "errorRate", "crashes", "loadTime", "load_time"]
+  "exclude": [
+    "id",
+    "gameId",
+    "version"
+  ],
+  "lowerIsBetter": [
+    "bounceRate",
+    "bounce_rate",
+    "errors",
+    "errorRate",
+    "crashes",
+    "loadTime",
+    "load_time"
+  ]
 }

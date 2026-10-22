@@ -8,7 +8,8 @@
     "check": "node src/main.mjs",
     "discover": "node src/main.mjs --discover --force --no-notify",
     "demo": "node src/demo.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "tg-test": "node src/tg-test.mjs"
   },
   "dependencies": {
     "playwright": "1.56.1"
