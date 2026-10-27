@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+    />
+    <title>Sniper Standoff</title>
+    <!-- the loading screen: styled here so it shows before the bundle arrives -->
+    <style>#boot{z-index:10;box-sizing:border-box;color:#363844;background:#8cc4f6 url(icons/ui/boot-portrait.webp) 50%/cover no-repeat;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 6vmin max(9vh,4em);font:800 16px/1.1 Rubik,Segoe UI,system-ui,-apple-system,BlinkMacSystemFont,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;transition:opacity .35s;display:flex;position:fixed;top:0;bottom:0;left:0;right:0}#boot .logo{aspect-ratio:1240/573;background:url(icons/ui/logo.webp) 50%/contain no-repeat;width:min(80vw,46vh);animation:.7s cubic-bezier(.2,1.4,.4,1) both bootLogo;position:absolute;top:7vh;left:50%;transform:translate(-50%)}#boot .boot-card{box-sizing:border-box;background:#f7f0e2;border:.2em solid #363844;border-radius:1.2em;flex-direction:column;align-items:center;gap:.7em;width:min(84vw,26em);padding:1.1em 1.2em 1em;display:flex;box-shadow:0 .3em #363844}#boot .bar{box-sizing:border-box;background:#f7f0e2;border:.2em solid #363844;border-radius:.9em;width:100%;height:1.7em;position:relative;overflow:hidden}#boot .bar i{background:repeating-linear-gradient(90deg,#91e8bd 0 1.6em,#363844 1.6em 1.78em);width:4%;height:100%;transition:width .6s ease-out;display:block}#boot b{letter-spacing:.02em;text-transform:uppercase;font-size:1.7em;font-weight:900}#boot .tip{text-align:center;text-transform:none;font-size:max(13px,.95em);font-weight:700}@media (min-aspect-ratio:1){#boot{isolation:isolate;background:#8cc4f6;overflow:hidden}#boot:before,#boot:after{content:"";z-index:-1;background:url(icons/ui/boot-portrait.webp) 50%/cover no-repeat;position:absolute}#boot:before{filter:blur(24px)brightness(.95);top:-40px;bottom:-40px;left:-40px;right:-40px}#boot:after{background-size:contain;top:0;bottom:0;left:0;right:0}}#boot.off{opacity:0;pointer-events:none}@keyframes bootLogo{0%{opacity:0;transform:translate(-50%)scale(.6)}}</style>
+    <link rel="icon" href="data:," />
+    <!-- the lobby's models start downloading alongside the code (CharacterAsset fetches these same URLs) -->
+    <link rel="preload" href="models/female.glb" as="fetch" crossorigin />
+    <link rel="preload" href="models/hair.glb" as="fetch" crossorigin />
+    <link rel="preload" href="models/anims.glb" as="fetch" crossorigin />
+    <!-- CrazyGames SDK v3; the game runs without it when blocked or self-hosted -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <script type="module" crossorigin src="./assets/index-CIhcCuFq.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CRA_g3iM.css">
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="ui">
+      <div id="duel">
+        <div id="flash"></div>
+        <div id="scope">
+          <i class="h"></i><i class="v"></i>
+          <div class="ring"></div>
+          <div class="mils"></div>
+          <svg class="rpg" viewBox="-100 -100 200 200" aria-hidden="true">
+            <g class="bars">
+              <rect x="-78" y="-15" width="73" height="7" /><rect x="5" y="-15" width="73" height="7" />
+              <rect x="-78" y="2" width="73" height="7" /><rect x="5" y="2" width="73" height="7" />
+              <path d="M-65.8-15v7M-53.7-15v7M-41.5-15v7M-29.3-15v7M-17.2-15v7M17.2-15v7M29.3-15v7M41.5-15v7M53.7-15v7M65.8-15v7" />
+              <path d="M-65.8 2v7M-53.7 2v7M-41.5 2v7M-29.3 2v7M-17.2 2v7M17.2 2v7M29.3 2v7M41.5 2v7M53.7 2v7M65.8 2v7" />
+              <path d="M-5 9v47M5 9v47" />
+            </g>
+            <g class="nums">
+              <text x="-65.8" y="16">5</text><text x="-53.7" y="16">4</text><text x="-41.5" y="16">3</text>
+              <text x="-29.3" y="16">2</text><text x="-17.2" y="16">1</text>
+              <text x="17.2" y="16">1</text><text x="29.3" y="16">2</text><text x="41.5" y="16">3</text>
+              <text x="53.7" y="16">4</text><text x="65.8" y="16">5</text>
+            </g>
+            <path class="chev" d="M-3.2 3.2 0 0 3.2 3.2" />
+          </svg>
+        </div>
+        <div id="top">
+          <div class="side you">
+            <div class="who">
+              <div class="avatar"></div>
+              <div><b id="nameYou">YOU</b><span class="pw" id="powerYou"></span></div>
+            </div>
+            <div class="hp"><i id="hpYouBar"></i><span id="hpYou">100</span></div>
+            <div class="ammo" id="ammoYou"></div>
+          </div>
+          <div class="side foe">
+            <div class="who">
+              <div><b id="nameFoe">ENEMY</b><span class="pw" id="powerFoe"></span></div>
+              <div class="avatar"></div>
+            </div>
+            <div class="hp"><i id="hpFoeBar"></i><span id="hpFoe">100</span></div>
+            <div class="ammo" id="ammoFoe"></div>
+          </div>
+        </div>
+        <div id="banner"></div>
+        <div id="pop"></div>
+        <div id="hit"></div>
+        <div id="floats"></div>
+        <div id="hint"></div>
+        <div id="gesture"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M26 58c-6 0-9-3-13-10l-7-13c-1-2 0-4 2-5s4 0 5 2l6 8V12a4 4 0 018 0v20h2V22a4 4 0 018 0v10h2v-7a4 4 0 018 0v7h2v-4a4 4 0 018 0v18c0 8-6 12-14 12z" fill="#fff" stroke="#14233a" stroke-width="3" stroke-linejoin="round"/></svg><i></i></div>
+        <div id="stick"><i></i></div>
+        <button id="pauseBtn" aria-label="Pause"><i></i><i></i></button>
+        <div id="score"></div>
+        <button id="emoteBtn" aria-label="Quick chat">💬</button>
+        <div id="emoteMenu"></div>
+        <div id="bubbleYou" class="bubble"></div>
+        <div id="bubbleFoe" class="bubble"></div>
+      </div>
+      <div id="meta"></div>
+      <div id="modal"></div>
+      <div id="toasts"></div>
+      <div id="rotate"><i class="phone"></i><b>Turn your phone upright</b><span>Sniper Standoff is played in portrait</span></div>
+      <div id="boot"><div class="logo"></div><div class="boot-card"><div class="bar"><i></i></div><b>Loading...</b><span class="tip">Tip: headshots deal 25% more damage</span></div></div>
+    </div>
+    <script>
+      // a few tips while the bundle and the models arrive
+      (() => {
+        const tips = [
+          'Headshots deal 25% more damage', 'Every shot bites a hole in the cover', 'Shotgun pellets punch wide, rockets lob over the wall',
+          'Pick up the rounds on your lane before you fire', 'Win matches to climb the trophy road and open new arenas',
+        ];
+        let i = 0;
+        const el = document.querySelector('#boot .tip');
+        const id = setInterval(() => (el && document.body.contains(el) ? (el.textContent = 'Tip: ' + tips[++i % tips.length].replace(/^./, (c) => c.toLowerCase())) : clearInterval(id)), 2600);
+      })();
+    </script>
+  </body>
+</html>
